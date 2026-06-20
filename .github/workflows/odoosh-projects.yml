@@ -43,11 +43,16 @@ jobs:
         if: ${{ github.sha == env.staging_sha }}
         run: |
           git fetch origin
-          if git merge --ff-only origin/staging; then
+          # Use specific SHA to avoid race conditions if origin/staging moved
+          if git merge --ff-only ${{ env.staging_sha }}; then
             git push origin production
           else
             echo "Fast-forward not possible, attempting a merge commit"
-            if git merge --no-ff --no-edit origin/staging; then
+            # Configure bot identity for merge commit
+            git config user.name "github-actions[bot]"
+            # Official GitHub Actions Bot identity
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            if git merge --no-ff --no-edit ${{ env.staging_sha }}; then
               git push origin production
             else
               echo "::error::Merge failed due to conflicts; aborting"
